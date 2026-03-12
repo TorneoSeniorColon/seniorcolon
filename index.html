@@ -949,7 +949,7 @@ async function initBanner() {
   // Construir HTML
   let slides = '', dots = '';
   bannerSlides.forEach((r, i) => {
-    const url = `https://drive.google.com/thumbnail?id=${r.id_drive.trim()}&sz=w1920`;
+    const url = `https://lh3.googleusercontent.com/d/${r.id_drive.trim()}=w1920`;
     slides += `<div class="banner-slide"><img src="${url}" alt="${r.descripcion||'Banner'}" loading="lazy"></div>`;
     dots += `<div class="banner-dot${i===0?' active':''}" onclick="bannerGo(${i})"></div>`;
   });
