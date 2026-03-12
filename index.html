@@ -169,6 +169,16 @@ main{max-width:960px;margin:0 auto;padding:22px 16px 80px;}
 .tx-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.35;margin-bottom:4px;}
 .tx-meta{font-size:12px;color:var(--text-m);}
 
+
+/* RESULTADOS FIXTURE */
+.part-jugado { background: rgba(34,197,94,0.05); border-color: rgba(34,197,94,0.15) !important; }
+.score-box { font-family:'Oswald',sans-serif; font-size:20px; font-weight:700; color:var(--gold-br); min-width:64px; text-align:center; letter-spacing:2px; flex-shrink:0; }
+.score-sep { color: var(--text-d); margin:0 4px; }
+.part-jugado .part-teams { flex:1; font-size:13px; font-weight:500; }
+.fw-win  { color: var(--text) !important; font-weight:700 !important; }
+.fw-loss { color: var(--text-d) !important; font-weight:400 !important; }
+.fw-draw { color: var(--blue-lt) !important; }
+
 /* LOADING / EMPTY / ERROR */
 .loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:28px;color:var(--text-m);font-size:13px;}
 .spin{width:20px;height:20px;border:2px solid var(--bdr-gold);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
@@ -618,8 +628,31 @@ async function renderFixture() {
       html += `<div class="fhdr"><span class="fhdr-n">${esprox ? '⚡ ' : ''}Fecha ${f}${esprox ? ' — PRÓXIMA' : ''}</span><span class="fhdr-m">${meta}</span></div>`;
 
       normales.forEach(p => {
-        const tieneScore = (p.goles_l !== '' && p.goles_l !== undefined && p.goles_v !== '' && p.goles_v !== undefined);
-        html += `<div class="part-row"><span class="part-hora">${p.hora||'—'}</span><span class="part-teams">${p.local||''} <span class="vs-b">VS</span> ${p.visitante||''}</span>${tieneScore ? `<span class="part-score">${p.goles_l} - ${p.goles_v}</span>` : ''}</div>`;
+        const jugado = p.estado === 'jugado';
+        const gl = p.goles_l !== undefined && p.goles_l !== '' ? parseInt(p.goles_l) : null;
+        const gv = p.goles_v !== undefined && p.goles_v !== '' ? parseInt(p.goles_v) : null;
+        const tieneScore = jugado && gl !== null && gv !== null;
+
+        let localCls = '', visitCls = '';
+        if (tieneScore) {
+          if (gl > gv)       { localCls = 'fw-win'; visitCls = 'fw-loss'; }
+          else if (gv > gl)  { localCls = 'fw-loss'; visitCls = 'fw-win'; }
+          else               { localCls = visitCls = 'fw-draw'; }
+        }
+
+        if (jugado && tieneScore) {
+          html += `<div class="part-row part-jugado">
+            <span class="part-hora">FIN</span>
+            <span class="part-teams ${localCls}">${p.local||''}</span>
+            <span class="score-box">${gl} <span class="score-sep">-</span> ${gv}</span>
+            <span class="part-teams ${visitCls}" style="text-align:right">${p.visitante||''}</span>
+          </div>`;
+        } else {
+          html += `<div class="part-row">
+            <span class="part-hora">${p.hora||'—'}</span>
+            <span class="part-teams">${p.local||''} <span class="vs-b">VS</span> ${p.visitante||''}</span>
+          </div>`;
+        }
       });
       libres.forEach(p => {
         const eqLibre = (p.local||'').toLowerCase() === 'libre' ? p.visitante : p.local;
@@ -648,7 +681,8 @@ async function renderSanciones() {
     let html = '';
     sanReal.forEach(r => {
       const ini = (r.jugador||'').split(/[\s,]+/).map(w => w[0]).join('').toUpperCase().slice(0,2);
-      html += `<div class="san"><div class="san-av">${ini}</div><div><div style="font-weight:600;font-size:14px">${r.jugador||''}</div><div style="font-size:12px;color:var(--text-m)">${r.club||''}</div></div><div class="san-tag">${r.fechas||''} FECHA${parseInt(r.fechas)>1?'S':''}</div></div>`;
+      const motivo = r.motivo ? `<div style="font-size:11px;color:var(--text-d);margin-top:3px;font-style:italic">${r.motivo}</div>` : '';
+      html += `<div class="san"><div class="san-av">${ini}</div><div style="flex:1"><div style="font-weight:600;font-size:14px">${r.jugador||''}</div><div style="font-size:12px;color:var(--text-m)">${r.club||''}</div>${motivo}</div><div class="san-tag">${r.fechas||''} FECHA${parseInt(r.fechas)>1?'S':''}</div></div>`;
     });
     el.innerHTML = html;
   }
@@ -673,10 +707,27 @@ async function renderBDF() {
     });
 
     let html = '';
-    Object.entries(clubs).forEach(([club, jugadores]) => {
+    Object.entries(clubs).forEach(([club, jugadores], idx) => {
       const ini = club.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,4);
-      html += `<div class="club-c"><div class="club-h"><div class="club-esc">${ini}</div><div class="club-nom">${club}</div><div class="club-cnt">${jugadores.length} jugadores</div></div><div class="jug-grid">`;
-      jugadores.forEach(j => { html += `<div class="jug-chip"><span class="jnum">#${j.numero||'—'}</span>${j.jugador||''}</div>`; });
+      const uid = 'bdf_' + cat + '_' + idx;
+      // Filtrar placeholders de ejemplo
+      const jugsReal = jugadores.filter(j => j.jugador && !String(j.jugador).includes('ejemplo') && !String(j.jugador).includes('Apellido'));
+      const cnt = jugsReal.length;
+      html += `<div class="club-c">
+        <div class="club-h" onclick="toggleBdf('${uid}')" style="cursor:pointer">
+          <div class="club-esc">${ini}</div>
+          <div class="club-nom">${club}</div>
+          <div class="club-cnt">${cnt > 0 ? cnt + ' jugadores' : 'Sin cargar'}</div>
+          <div style="margin-left:auto;font-size:18px;color:var(--gold);transition:transform .2s" id="arr-${uid}">▾</div>
+        </div>
+        <div id="${uid}" style="display:none">`;
+      if (cnt > 0) {
+        html += '<div class="jug-grid">';
+        jugsReal.forEach(j => { html += `<div class="jug-chip"><span class="jnum">#${j.numero||'—'}</span>${j.jugador||''}</div>`; });
+        html += '</div>';
+      } else {
+        html += '<div class="empty" style="padding:12px">Lista pendiente de carga en la planilla</div>';
+      }
       html += '</div></div>';
     });
     el.innerHTML = html;
@@ -725,7 +776,7 @@ async function renderTransmisiones() {
   const config = cfgToMap(cfg);
 
   // Canal de YouTube
-  const canalUrl = config['canal_youtube'] || 'https://www.youtube.com/@TorneoSeniorColon';
+  const canalUrl = config['canal_youtube'] || 'https://www.youtube.com/@UlisesPortilloupaudiovisuales';
   const canalLink = document.getElementById('canal-link');
   if (canalLink) canalLink.href = canalUrl;
 
@@ -826,6 +877,16 @@ async function loadSection(name) {
   else if (name === 'configuracion') renderConfigSection();
 }
 
+
+
+function toggleBdf(uid) {
+  const el = document.getElementById(uid);
+  const arr = document.getElementById('arr-' + uid);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arr) arr.style.transform = open ? '' : 'rotate(180deg)';
+}
 
 // ═══════════════════════════════════════════════════════
 //  CONTRASEÑA CONFIG — cambiá 'colon2026' por la que quieras
