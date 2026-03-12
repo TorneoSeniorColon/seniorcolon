@@ -566,7 +566,7 @@ function renderPosTable(rows) {
     return n > 0 ? `<td class="dp">+${n}</td>` : `<td class="dn">${n}</td>`;
   };
   let h = `<div class="tw"><table class="st">
-    <thead><tr><th colspan="2" style="text-align:left;padding-left:14px">Equipo</th><th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th></tr></thead>
+    <thead><tr><th style="text-align:left;padding-left:14px">Equipo</th><th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th></tr></thead>
     <tbody>`;
   rows.forEach((r, i) => {
     const c = clsPos(i);
