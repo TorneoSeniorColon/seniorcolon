@@ -170,6 +170,13 @@ main{max-width:960px;margin:0 auto;padding:22px 16px 80px;}
 .tx-meta{font-size:12px;color:var(--text-m);}
 
 
+
+/* LIBRE DESTACADO */
+.libre-row { display:flex; align-items:center; gap:10px; background:rgba(122,136,168,0.08); border:1px dashed rgba(122,136,168,0.3); border-radius:6px; padding:8px 14px; margin:4px 0; }
+.libre-icon { font-size:14px; }
+.libre-label { font-family:'Oswald',sans-serif; font-size:11px; font-weight:700; color:var(--text-d); letter-spacing:2px; background:rgba(122,136,168,0.15); padding:2px 8px; border-radius:3px; }
+.libre-team { font-size:14px; font-weight:600; color:var(--text-m); }
+
 /* RESULTADOS FIXTURE */
 .part-jugado { background: rgba(34,197,94,0.05); border-color: rgba(34,197,94,0.15) !important; }
 .score-box { font-family:'Oswald',sans-serif; font-size:20px; font-weight:700; color:var(--gold-br); min-width:64px; text-align:center; letter-spacing:2px; flex-shrink:0; }
@@ -559,7 +566,7 @@ function renderPosTable(rows) {
     return n > 0 ? `<td class="dp">+${n}</td>` : `<td class="dn">${n}</td>`;
   };
   let h = `<div class="tw"><table class="st">
-    <thead><tr><th>#</th><th>Equipo</th><th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th></tr></thead>
+    <thead><tr><th colspan="2" style="text-align:left;padding-left:14px">Equipo</th><th>PTS</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th></tr></thead>
     <tbody>`;
   rows.forEach((r, i) => {
     const c = clsPos(i);
@@ -651,7 +658,7 @@ async function renderFixture() {
       });
       libres.forEach(p => {
         const eqLibre = (p.local||'').toLowerCase() === 'libre' ? p.visitante : p.local;
-        html += `<div style="padding:4px 8px"><span class="libre-b">Libre: ${eqLibre}</span></div>`;
+        html += `<div class="libre-row"><span class="libre-icon">📋</span><span class="libre-label">LIBRE</span><span class="libre-team">${eqLibre}</span></div>`;
       });
 
       html += '</div>';
@@ -780,9 +787,10 @@ async function renderTransmisiones() {
     const vid = (r.video_id || '').trim();
     html += `<div class="tx-card">
       <div class="tx-vid">
-        <div class="tx-ph" onclick="loadVid(this,'${vid}')">
-          <div class="tx-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
-          <span class="tx-ph-lbl">Reproducir</span>
+        <div class="tx-ph" onclick="loadVid(this,'${vid}')" style="background-image:url('https://img.youtube.com/vi/${vid}/hqdefault.jpg');background-size:cover;background-position:center;">
+          <div style="position:absolute;inset:0;background:rgba(6,9,26,0.45)"></div>
+          <div class="tx-play" style="position:relative;z-index:1"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          <span class="tx-ph-lbl" style="position:relative;z-index:1">Reproducir</span>
         </div>
       </div>
       <div class="tx-body">
