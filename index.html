@@ -407,8 +407,11 @@ main{max-width:960px;margin:0 auto;padding:22px 16px 80px;}
 // ═══════════════════════════════════════════════════════
 const SHEET_STORAGE_KEY = 'torneo_sheet_id';
 
+// ID de la planilla hardcodeado — funciona para todos los dispositivos
+const HARDCODED_SHEET_ID = '1QHtx-1gz6y1HdrFCdc8NJXeFYYXBfZdhz6h0mIeCYN4';
+
 function getSheetId() {
-  return localStorage.getItem(SHEET_STORAGE_KEY) || '';
+  return localStorage.getItem(SHEET_STORAGE_KEY) || HARDCODED_SHEET_ID;
 }
 
 function sheetUrl(sheetName) {
