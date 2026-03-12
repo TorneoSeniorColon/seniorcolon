@@ -235,7 +235,7 @@ main{max-width:960px;margin:0 auto;padding:22px 16px 80px;}
       <button onclick="showTab('sanciones',this)">Sanciones</button>
       <button onclick="showTab('bdfe',this)">Lista BdF</button>
       <button onclick="showTab('reglamento',this)">Reglamento</button>
-      <button onclick="showTab('configuracion',this)">⚙️ Config</button>
+      <button onclick="pedirPassword(this)">⚙️ Config</button>
     </div>
   </div>
 </header>
@@ -414,7 +414,7 @@ function getSheetId() {
 function sheetUrl(sheetName) {
   const id = getSheetId();
   if (!id) return null;
-  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&range=A3:Z1000`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -428,7 +428,7 @@ async function fetchSheet(sheetName) {
     const text = await res.text();
     // El response viene envuelto: google.visualization.Query.setResponse({...})
     const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
-    const cols = json.table.cols.map(c => c.label.toLowerCase().trim());
+    const cols = json.table.cols.map(c => (c.label || c.id || '').toLowerCase().trim());
     const rows = (json.table.rows || []).map(r => {
       const obj = {};
       r.c.forEach((cell, i) => { obj[cols[i]] = cell ? (cell.v !== null ? cell.v : (cell.f || '')) : ''; });
@@ -502,7 +502,7 @@ async function renderInicio() {
 
   // Leer partidos próxima fecha desde fixture
   const fix = await getData('fixture_' + cat);
-  const proxPartidos = fix ? fix.filter(r => r.estado === 'proxima' || r.estado === 'programado' || r.fecha == nfecha) : [];
+  const proxPartidos = fix ? fix.filter(r => r.estado === 'proxima') : [];
 
   let html = `
     <div class="sec-title">Próxima Fecha</div>
@@ -547,7 +547,7 @@ function renderPosTable(rows) {
   const clsTop = (i) => i < 2 ? 'tr-top' : '';
   const dg = (v) => {
     const n = parseFloat(v);
-    if (isNaN(n) || v === '' || v === 0) return `<td class="d0">0</td>`;
+    if (isNaN(n) || v === '' || n === 0) return `<td class="d0">0</td>`;
     return n > 0 ? `<td class="dp">+${n}</td>` : `<td class="dn">${n}</td>`;
   };
   let h = `<div class="tw"><table class="st">
@@ -639,8 +639,11 @@ async function renderSanciones() {
     const data = await getData('sanciones_' + cat);
     if (!data || !data.length) { el.innerHTML = '<div class="empty">Sin sanciones activas</div>'; continue; }
 
+    // Filtrar filas vacías o placeholders (ej: celda fusionada "Sin sanciones activas")
+    const sanReal = data.filter(r => r.jugador && r.club && String(r.jugador).length < 60);
+    if (!sanReal.length) { el.innerHTML = '<div class="empty">Sin sanciones activas</div>'; continue; }
     let html = '';
-    data.forEach(r => {
+    sanReal.forEach(r => {
       const ini = (r.jugador||'').split(/[\s,]+/).map(w => w[0]).join('').toUpperCase().slice(0,2);
       html += `<div class="san"><div class="san-av">${ini}</div><div><div style="font-weight:600;font-size:14px">${r.jugador||''}</div><div style="font-size:12px;color:var(--text-m)">${r.club||''}</div></div><div class="san-tag">${r.fechas||''} FECHA${parseInt(r.fechas)>1?'S':''}</div></div>`;
     });
@@ -766,7 +769,7 @@ function guardarSheetId() {
   if (!val) { document.getElementById('sheet-status').textContent = 'Ingresá un ID válido'; return; }
   localStorage.setItem(SHEET_STORAGE_KEY, val);
   Object.keys(cache).forEach(k => delete cache[k]); // limpiar caché
-  document.getElementById('sheet-status').innerHTML = '✅ Guardado. <b>Recargá la página</b> para ver los datos.';
+  document.getElementById('sheet-status').innerHTML = '✅ Guardado. Recargando en 2 segundos...'; setTimeout(() => location.reload(), 2000);
   document.getElementById('current-id-display').textContent = val;
 }
 
@@ -818,6 +821,28 @@ async function loadSection(name) {
   else if (name === 'reglamento') await renderReglamento();
   else if (name === 'transmisiones') await renderTransmisiones();
   else if (name === 'configuracion') renderConfigSection();
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  CONTRASEÑA CONFIG — cambiá 'colon2026' por la que quieras
+// ═══════════════════════════════════════════════════════
+const CONFIG_PASS = 'colon2026';
+const PASS_KEY = 'torneo_config_auth';
+
+function pedirPassword(btn) {
+  if (sessionStorage.getItem(PASS_KEY) === '1') {
+    showTab('configuracion', btn);
+    return;
+  }
+  const pass = prompt('Ingresá la contraseña para acceder a la configuración:');
+  if (pass === null) return;
+  if (pass === CONFIG_PASS) {
+    sessionStorage.setItem(PASS_KEY, '1');
+    showTab('configuracion', btn);
+  } else {
+    alert('Contraseña incorrecta.');
+  }
 }
 
 // INICIO
