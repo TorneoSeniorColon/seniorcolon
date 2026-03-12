@@ -319,13 +319,8 @@ main{max-width:960px;margin:0 auto;padding:22px 16px 80px;}
 <!-- ══════════ BDF ══════════ -->
 <section id="tab-bdfe" class="sec">
   <div class="sec-title">Lista de Buena Fe</div>
-  <div class="cat-tabs">
-    <button class="ctab active" onclick="subTab('bdf',35,this)">+35</button>
-    <button class="ctab" onclick="subTab('bdf',40,this)">+40</button>
-  </div>
-  <p style="font-size:13px;color:var(--text-m);margin-bottom:16px">Jugadores habilitados por club.</p>
-  <div id="bdf-35"><div class="loading"><div class="spin"></div>Cargando...</div></div>
-  <div id="bdf-40" style="display:none"><div class="loading"><div class="spin"></div>Cargando...</div></div>
+  <p style="font-size:13px;color:var(--text-m);margin-bottom:16px">Jugadores habilitados — todas las categorías.</p>
+  <div id="bdf-unica"><div class="loading"><div class="spin"></div>Cargando...</div></div>
 </section>
 
 <!-- ══════════ REGLAMENTO ══════════ -->
@@ -689,49 +684,46 @@ async function renderSanciones() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  SECCIÓN: BUENA FE
+//  SECCIÓN: BUENA FE (lista única)
 // ═══════════════════════════════════════════════════════
 async function renderBDF() {
-  for (const cat of [35, 40]) {
-    const el = document.getElementById('bdf-' + cat);
-    if (!getSheetId()) { el.innerHTML = setupNeeded(); continue; }
-    const data = await getData('bdf_' + cat);
-    if (!data || !data.length) { el.innerHTML = '<div class="empty">Listas de buena fe pendientes de carga</div>'; continue; }
+  const el = document.getElementById('bdf-unica');
+  if (!getSheetId()) { el.innerHTML = setupNeeded(); return; }
+  const data = await getData('bdf_35'); // una sola pestaña para todas las categorías
+  if (!data || !data.length) { el.innerHTML = '<div class="empty">Lista de buena fe pendiente de carga</div>'; return; }
 
-    // Agrupar por club
-    const clubs = {};
-    data.forEach(r => {
-      const club = r.club || 'Sin club';
-      if (!clubs[club]) clubs[club] = [];
-      clubs[club].push(r);
-    });
+  // Agrupar por club
+  const clubs = {};
+  data.forEach(r => {
+    const club = r.club || 'Sin club';
+    if (!clubs[club]) clubs[club] = [];
+    clubs[club].push(r);
+  });
 
-    let html = '';
-    Object.entries(clubs).forEach(([club, jugadores], idx) => {
-      const ini = club.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,4);
-      const uid = 'bdf_' + cat + '_' + idx;
-      // Filtrar placeholders de ejemplo
-      const jugsReal = jugadores.filter(j => j.jugador && !String(j.jugador).includes('ejemplo') && !String(j.jugador).includes('Apellido'));
-      const cnt = jugsReal.length;
-      html += `<div class="club-c">
-        <div class="club-h" onclick="toggleBdf('${uid}')" style="cursor:pointer">
-          <div class="club-esc">${ini}</div>
-          <div class="club-nom">${club}</div>
-          <div class="club-cnt">${cnt > 0 ? cnt + ' jugadores' : 'Sin cargar'}</div>
-          <div style="margin-left:auto;font-size:18px;color:var(--gold);transition:transform .2s" id="arr-${uid}">▾</div>
-        </div>
-        <div id="${uid}" style="display:none">`;
-      if (cnt > 0) {
-        html += '<div class="jug-grid">';
-        jugsReal.forEach(j => { html += `<div class="jug-chip"><span class="jnum">#${j.numero||'—'}</span>${j.jugador||''}</div>`; });
-        html += '</div>';
-      } else {
-        html += '<div class="empty" style="padding:12px">Lista pendiente de carga en la planilla</div>';
-      }
-      html += '</div></div>';
-    });
-    el.innerHTML = html;
-  }
+  let html = '';
+  Object.entries(clubs).forEach(([club, jugadores], idx) => {
+    const ini = club.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,4);
+    const uid = 'bdf_u_' + idx;
+    const jugsReal = jugadores.filter(j => j.jugador && !String(j.jugador).includes('Apellido'));
+    const cnt = jugsReal.length;
+    html += `<div class="club-c">
+      <div class="club-h" onclick="toggleBdf('${uid}')" style="cursor:pointer">
+        <div class="club-esc">${ini}</div>
+        <div class="club-nom">${club}</div>
+        <div class="club-cnt">${cnt > 0 ? cnt + ' jugadores' : 'Sin cargar'}</div>
+        <div style="margin-left:auto;font-size:18px;color:var(--gold);transition:transform .2s" id="arr-${uid}">▾</div>
+      </div>
+      <div id="${uid}" style="display:none">`;
+    if (cnt > 0) {
+      html += '<div class="jug-grid">';
+      jugsReal.forEach(j => { html += `<div class="jug-chip"><span class="jnum">#${j.numero||'—'}</span>${j.jugador||''}</div>`; });
+      html += '</div>';
+    } else {
+      html += '<div class="empty" style="padding:12px">Lista pendiente de carga en la planilla</div>';
+    }
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════
